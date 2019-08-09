@@ -29,7 +29,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Value("${spring.queries.roles-query}")
 	private String rolesQuery;
 
-	@Override // prvo
+	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
 		.csrf().disable() //Cross-site request forgery is disabled
@@ -42,11 +42,11 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired
 	public void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.jdbcAuthentication() // autentifikacija gadja bazom
-				.usersByUsernameQuery(usersQuery) // useri se dobijaju ovim upitom
-				.authoritiesByUsernameQuery(rolesQuery) // ovde su uloge
-				.passwordEncoder(passwordEncoder()) // enkoder
-				.dataSource(dataSource); // podaci su u bazi
+		auth.jdbcAuthentication() 
+				.usersByUsernameQuery(usersQuery) 
+				.authoritiesByUsernameQuery(rolesQuery) 
+				.passwordEncoder(passwordEncoder()) 
+				.dataSource(dataSource); 
 	}
 
 	@Bean

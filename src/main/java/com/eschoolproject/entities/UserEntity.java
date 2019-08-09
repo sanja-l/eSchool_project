@@ -38,7 +38,7 @@ public class UserEntity {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	protected Long id;
 
-	@NotNull(message = "PIN must be provided")
+	@NotNull(message = "PIN must be provided") 
 	@Size(min = 13, max = 13, message = "Pin must be between {min} characters long.")
 	@Column(name = "pin", unique = true, updatable = false)
 	private String pin; // EX YU personal identification number i.e. JMBG

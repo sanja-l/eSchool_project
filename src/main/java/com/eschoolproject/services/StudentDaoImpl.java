@@ -157,5 +157,10 @@ public class StudentDaoImpl implements StudentDao {
 		}
 		return studentRepository.qFindTeachersByStudentId(studentId);
 	}
+	
+	@Override
+	public List<String> findParentsEmailsByStudentId(Long sid){
+		return studentRepository.qFindParentsEmailsByStudentId(sid);
+	}
 
 }

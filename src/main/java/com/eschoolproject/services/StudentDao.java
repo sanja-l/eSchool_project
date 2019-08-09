@@ -30,4 +30,6 @@ public interface StudentDao {
 	
 	public List<TeacherEntity> findTeachersByStudentId(Long studentId) throws EntityNotFoundException;
 
+	public List<String> findParentsEmailsByStudentId(Long sid);
+
 }

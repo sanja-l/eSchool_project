@@ -12,10 +12,14 @@ public class WelcomeController {
 	public String Welcome() {
 		return "Welcome!";
 	}
+	
+	
 	@RequestMapping(method = RequestMethod.GET, value = "/eschool")
 	public String WelcomeESchool() {
 		return "Welcome to eSchool!";
 	}
+	
+	
 	@Secured("ROLE_GUEST")
 	@RequestMapping(method = RequestMethod.GET, value = "/eschool/guests")
 	public String WelcomeESchoolGuest() {

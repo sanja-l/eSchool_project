@@ -2,7 +2,6 @@ package com.eschoolproject.services;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -10,13 +9,11 @@ import org.springframework.stereotype.Service;
 import com.eschoolproject.entities.AssesmentEntity;
 import com.eschoolproject.entities.CourseGradeEntity;
 import com.eschoolproject.entities.EngagementEntity;
-import com.eschoolproject.entities.ParentEntity;
 import com.eschoolproject.entities.StudentEntity;
 import com.eschoolproject.entities.TeacherEntity;
 import com.eschoolproject.repositories.AssesmentRepository;
 import com.eschoolproject.repositories.CourseGradeRepository;
 import com.eschoolproject.repositories.EngagementRepository;
-import com.eschoolproject.repositories.ParentRepository;
 import com.eschoolproject.repositories.StudentRepository;
 import com.eschoolproject.repositories.TeacherRepository;
 import com.eschoolproject.util.customexceptions.EntityMissmatchException;
@@ -30,18 +27,18 @@ public class AssesmentDaoImpl implements AssesmentDao {
 	private final CourseGradeRepository courseGradeRepository;
 	private final TeacherRepository teacherRepository;
 	private final StudentRepository studentRepository;
-	private final ParentRepository parentRepository;
+
 
 	// @Autowired
 	public AssesmentDaoImpl(AssesmentRepository assesmentRepository, EngagementRepository engagementRepository,
 			CourseGradeRepository courseGradeRepository, TeacherRepository teacherRepository,
-			StudentRepository studentRepository, ParentRepository parentRepository) {
+			StudentRepository studentRepository) {
 		this.assesmentRepository = assesmentRepository;
 		this.engagementRepository = engagementRepository;
 		this.courseGradeRepository = courseGradeRepository;
 		this.teacherRepository = teacherRepository;
 		this.studentRepository = studentRepository;
-		this.parentRepository = parentRepository;
+
 	}
 
 	@Override
@@ -82,10 +79,7 @@ public class AssesmentDaoImpl implements AssesmentDao {
 	}
 
 	@Override
-	public AssesmentEntity save(AssesmentEntity assesmentEntity,
-								Long courseGradeId,
-								Long teacherId,
-								Long studentId)
+	public AssesmentEntity save(AssesmentEntity assesmentEntity, Long courseGradeId, Long teacherId, Long studentId)
 			throws DataIntegrityViolationException, EntityNotFoundException, EntityMissmatchException {
 
 		TeacherEntity teacherEntity = teacherRepository.findById(teacherId).orElse(null);
@@ -123,27 +117,19 @@ public class AssesmentDaoImpl implements AssesmentDao {
 	}
 
 	@Override
-	public  List<AssesmentEntity> findByParentId(Long parentId) throws EntityNotFoundException {
-		ParentEntity parentEntity = parentRepository.findById(parentId).orElse(null);
-		if (parentEntity == null)
-			throw new EntityNotFoundException("Parent Entity with id =" + parentId + " does not exist.");
-				
-		Set<StudentEntity> studentEntities = parentEntity.getChildren();
-		
+	public List<AssesmentEntity> findByParentId(Long parentId){
+		List<StudentEntity> studentEntities = studentRepository.qFindStudentsByParentId(parentId);
+
 		List<AssesmentEntity> studentAssesments = new ArrayList<AssesmentEntity>();
 		for (StudentEntity studentEntity : studentEntities) {
-			String key = studentEntity.getFirstname() + " " + studentEntity.getLastname();
-			System.out.println(key);
 			studentAssesments.addAll(studentEntity.getAssesmentEntities());
-			//studentAssesments.put(key,  studentEntity.getAssesmentEntities());
 			studentEntity.getAssesmentEntities();
 		}
 		return studentAssesments;
 	}
 
 	@Override
-	public AssesmentEntity deleteByIdAndTeacherId(	Long id,
-													Long teacherId)
+	public AssesmentEntity deleteByIdAndTeacherId(Long id, Long teacherId)
 			throws EntityNotFoundException, EntityMissmatchException {
 		AssesmentEntity assesmentEntity = findById(id);
 		if (!assesmentEntity.getTeacher().getId().equals(teacherId))
@@ -152,6 +138,12 @@ public class AssesmentDaoImpl implements AssesmentDao {
 		assesmentRepository.deleteById(id);
 
 		return assesmentEntity;
+	}
+
+	@Override
+	public Long FindTeachersByAssesmentId(Long id) {
+		List<Long> teacherIds = assesmentRepository.qFindTeachersByAssesmentId(id);
+		return teacherIds.get(0);
 	}
 
 }

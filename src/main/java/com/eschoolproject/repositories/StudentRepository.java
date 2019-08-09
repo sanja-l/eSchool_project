@@ -23,4 +23,12 @@ public interface StudentRepository extends CrudRepository<StudentEntity, Long> {
 			+ " WHERE e.teacher  = t "
 			+ " AND  e.sclass = s.sclass AND s.id =:sid")
 	List<TeacherEntity> qFindTeachersByStudentId(@Param("sid") Long sid);
+	
+	@Query("SELECT DISTINCT s FROM StudentEntity s inner join s.parents p "
+			+ " WHERE p.id =:pid")
+	List<StudentEntity> qFindStudentsByParentId(@Param("pid") Long pid);
+	
+	@Query("SELECT DISTINCT p.email FROM ParentEntity p inner join p.children s "
+			+ " WHERE s.id =:sid")
+	List<String> qFindParentsEmailsByStudentId(@Param("sid") Long sid);
 }

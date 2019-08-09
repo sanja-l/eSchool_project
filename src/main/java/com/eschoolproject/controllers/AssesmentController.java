@@ -24,11 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eschoolproject.controllers.utils.RESTError;
 import com.eschoolproject.entities.AccountEntity;
 import com.eschoolproject.entities.AssesmentEntity;
-import com.eschoolproject.entities.ParentEntity;
 import com.eschoolproject.entities.dto.AssesmentDto;
+import com.eschoolproject.entities.dto.AssesmentReportDto;
 import com.eschoolproject.entities.email.EmailObject;
 import com.eschoolproject.services.AccountDao;
 import com.eschoolproject.services.AssesmentDao;
+import com.eschoolproject.services.StudentDao;
 import com.eschoolproject.services.email.EmailService;
 import com.eschoolproject.util.Utility;
 import com.eschoolproject.util.customexceptions.EntityMissmatchException;
@@ -47,11 +48,19 @@ public class AssesmentController {
 	private final AssesmentDao assesmentDao;
 	private final AccountDao accountDao;
 	private final EmailService emailService;
+	private final StudentDao studentDao;
 
-	public AssesmentController(AssesmentDao assesmentDao, AccountDao accountDao, EmailService emailService) {
+	
+	
+	
+
+	public AssesmentController(AssesmentDao assesmentDao, AccountDao accountDao, EmailService emailService,
+			StudentDao studentDao) {
+		super();
 		this.assesmentDao = assesmentDao;
 		this.accountDao = accountDao;
 		this.emailService = emailService;
+		this.studentDao = studentDao;
 	}
 
 	@Secured("ROLE_ADMIN")
@@ -106,7 +115,9 @@ public class AssesmentController {
 		try {
 			assesmentEntities = assesmentDao.findByTeacherId(teacherId);
 			log.debug("Access to all classes by Teacher");
-			return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities, HttpStatus.OK);
+			// return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities,
+			// HttpStatus.OK);
+			return new ResponseEntity<List<AssesmentReportDto>>(aes2ards(assesmentEntities), HttpStatus.OK);
 		} catch (EntityNotFoundException e) {
 			log.error("EntityNotFoundException occurred: " + e.getMessage());
 			return new ResponseEntity<RESTError>(new RESTError(1, "Entity not found: " + e.getMessage()),
@@ -127,7 +138,9 @@ public class AssesmentController {
 		try {
 			assesmentEntities = assesmentDao.findByStudentId(studentId);
 			log.debug("Access to all assesments by Student");
-			return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities, HttpStatus.OK);
+			// return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities,
+			// HttpStatus.OK);
+			return new ResponseEntity<List<AssesmentReportDto>>(aes2ards(assesmentEntities), HttpStatus.OK);
 		} catch (EntityNotFoundException e) {
 			log.error("EntityNotFoundException occurred: " + e.getMessage());
 			return new ResponseEntity<RESTError>(new RESTError(1, "Entity not found: " + e.getMessage()),
@@ -136,7 +149,6 @@ public class AssesmentController {
 
 	}
 
-	/////////////////////////////////////////
 	@Secured({ "ROLE_ADMIN", "ROLE_PARENT" })
 	@RequestMapping(method = RequestMethod.GET, value = "/reports/parent/{parentId}")
 	public ResponseEntity<?> getAllAssesmentEntitiesByParent2(Principal principal, @PathVariable Long parentId) {
@@ -148,40 +160,14 @@ public class AssesmentController {
 		}
 
 		List<AssesmentEntity> assesmentEntities;
-		try {
-			assesmentEntities = assesmentDao.findByParentId(parentId);
-			log.debug("Access to all assesments by Parent" + parentId);
-			return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities, HttpStatus.OK);
-		} catch (EntityNotFoundException e) {
-			log.error("EntityNotFoundException occurred: " + e.getMessage());
-			return new ResponseEntity<RESTError>(new RESTError(1, "Entity not found: " + e.getMessage()),
-					HttpStatus.NOT_FOUND);
-		}
+
+		assesmentEntities = assesmentDao.findByParentId(parentId);
+		log.debug("Access to all assesments by Parent" + parentId);
+		// return new ResponseEntity<List<AssesmentEntity>>(assesmentEntities,
+		// HttpStatus.OK);
+		return new ResponseEntity<List<AssesmentReportDto>>(aes2ards(assesmentEntities), HttpStatus.OK);
 
 	}
-
-//	@Secured({ "ROLE_ADMIN", "ROLE_PARENT" })
-//	@RequestMapping(method = RequestMethod.GET, value = "/reports/parent/{parentId}")
-//	public ResponseEntity<?> getAllAssesmentEntitiesByParent(	Principal principal,
-//																@PathVariable Long parentId) {
-//		if (!allowAccount(principal, parentId)) {
-//			log.error("Parent can only access to his/her own childern's assesments.");
-//			return new ResponseEntity<RESTError>(
-//					new RESTError(5, "Parent can only access to his/her own childern's assesments."),
-//					HttpStatus.FORBIDDEN);
-//		}
-//		HashMap<String, List<AssesmentEntity>> studentAssesments;
-//		try {
-//			studentAssesments = assesmentDao.findByParentId(parentId);
-//			log.debug("Access to all assesmets Parent");
-//			return new ResponseEntity<HashMap<String, List<AssesmentEntity>>>(studentAssesments, HttpStatus.OK);
-//		} catch (EntityNotFoundException e) {
-//			log.error("EntityNotFoundException occurred: " + e.getMessage());
-//			return new ResponseEntity<RESTError>(new RESTError(1, "Entity not found: " + e.getMessage()),
-//					HttpStatus.NOT_FOUND);
-//		}
-//
-//	}
 
 	@Secured("ROLE_ADMIN")
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
@@ -251,9 +237,7 @@ public class AssesmentController {
 		try {
 			assesmentEntity = assesmentDao.save(assesmentEntity, assesmentDto.getCourseGradeId(),
 					assesmentDto.getTeacherId(), assesmentDto.getStudentId());
-			log.debug("Assesment created:" + assesmentEntity.toString());
-
-			// send email to all child's parents
+			log.debug("Assesment created.");
 			for (EmailObject emailObject : prepareEmail(assesmentEntity)) {
 				emailService.sendSimpleMessage(emailObject);
 				log.debug("Sent mail");
@@ -351,21 +335,47 @@ public class AssesmentController {
 		List<EmailObject> emailObjects = new ArrayList<EmailObject>();
 		SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
 		String strDate = sdf.format(assesmentEntity.getMarkDate());
-		// TODO ovde posalji mejl
+
 		String text = "Student: " + assesmentEntity.getStudent().getFirstname() + " "
 				+ assesmentEntity.getStudent().getLastname() + "\n Mark: " + assesmentEntity.getMark() + "\n Course: "
 				+ assesmentEntity.getCourseGrade().getCourse().getCourseName() + "\n Teacher: "
 				+ assesmentEntity.getTeacher().getFirstname() + " " + assesmentEntity.getTeacher().getLastname()
 				+ "\n Date: " + strDate;
 
-		for (ParentEntity parentEntity : assesmentEntity.getStudent().getParents()) {
+		for (String emailTo : studentDao.findParentsEmailsByStudentId(assesmentEntity.getStudent().getId())) {
 			EmailObject emailObject = new EmailObject();
 			emailObject.setSubject("Assesment");
 			emailObject.setText(text);
-			emailObject.setTo(parentEntity.getEmail());
+			emailObject.setTo(emailTo);
 			emailObjects.add(emailObject);
 		}
 		return emailObjects;
+
+	}
+
+
+	private AssesmentReportDto ae2ard(AssesmentEntity ae) {
+		AssesmentReportDto ard = new AssesmentReportDto();
+		ard.setId(ae.getId());
+		ard.setStudentName(ae.getStudent().getFirstname() + " " + ae.getStudent().getLastname());
+		ard.setClassName(ae.getStudent().getSclass().getGrade().getGradeValue() + "-"
+				+ ae.getStudent().getSclass().getClassName());
+		ard.setCourseName(ae.getCourseGrade().getCourse().getCourseName());
+    	ard.setTeacherName(ae.getTeacher().getFirstname()+" "+ae.getTeacher().getLastname());
+		ard.setTeacherName("");
+		ard.setMark(ae.getMark());
+		ard.setIsFinalMark(ae.getIsFinalMark());
+		ard.setMarkDate(ae.getMarkDate());
+		ard.setSemester(ae.getSemester());
+		return ard;
+	}
+
+	private List<AssesmentReportDto> aes2ards(List<AssesmentEntity> aes) {
+		List<AssesmentReportDto> ards = new ArrayList<AssesmentReportDto>(aes.size());
+		for (AssesmentEntity ae : aes) {
+			ards.add(ae2ard(ae));
+		}
+		return ards;
 
 	}
 

@@ -19,7 +19,7 @@ public interface AssesmentDao {
 
 	public List<AssesmentEntity> findByStudentId(Long studentId) throws EntityNotFoundException;
 
-	public List<AssesmentEntity> findByParentId(Long parentId) throws EntityNotFoundException;
+	public List<AssesmentEntity> findByParentId(Long parentId);
 
 	public AssesmentEntity save(AssesmentEntity assesmentEntity,
 								Long courseGradeId,
@@ -32,5 +32,7 @@ public interface AssesmentDao {
 	public AssesmentEntity deleteByIdAndTeacherId(	Long id,
 													Long teacherId)
 			throws EntityNotFoundException, EntityMissmatchException;
+	
+	public Long FindTeachersByAssesmentId(Long id);
 
 }
